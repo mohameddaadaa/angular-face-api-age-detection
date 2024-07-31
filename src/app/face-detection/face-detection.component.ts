@@ -1,4 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef, NgZone } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  NgZone,
+} from '@angular/core';
 import { NgIf } from '@angular/common';
 import * as faceapi from 'face-api.js';
 
@@ -7,16 +13,19 @@ import * as faceapi from 'face-api.js';
   templateUrl: './face-detection.component.html',
   styleUrls: ['./face-detection.component.css'],
   standalone: true,
-  imports: [NgIf]
+  imports: [NgIf],
 })
 export class FaceDetectionComponent implements OnInit {
-  @ViewChild('video', { static: true }) videoElement!: ElementRef<HTMLVideoElement>;
-  @ViewChild('canvas', { static: true }) canvasElement!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('video', { static: true })
+  videoElement!: ElementRef<HTMLVideoElement>;
+  @ViewChild('canvas', { static: true })
+  canvasElement!: ElementRef<HTMLCanvasElement>;
 
   age: number | null = null;
-  mood: string | null = null;
+  // mood: string | null = null;
+  moodMessage: string | null = null;
 
-  constructor(private ngZone: NgZone) { }
+  constructor(private ngZone: NgZone) {}
 
   async ngOnInit() {
     console.log('FaceDetectionComponent initialized');
@@ -40,13 +49,14 @@ export class FaceDetectionComponent implements OnInit {
   }
 
   startVideo() {
-    return navigator.mediaDevices.getUserMedia({ video: {} })
-      .then(stream => {
-        if (this.videoElement.nativeElement) {
+    return navigator.mediaDevices
+      .getUserMedia({ video: {} })
+      .then((stream) => {
+        if (this.videoElement?.nativeElement) {
           this.videoElement.nativeElement.srcObject = stream;
         }
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   }
 
   detect() {
@@ -57,11 +67,15 @@ export class FaceDetectionComponent implements OnInit {
 
     this.ngZone.runOutsideAngular(() => {
       setInterval(async () => {
-        const detections = await faceapi.detectAllFaces(video)
+        const detections = await faceapi
+          .detectAllFaces(video)
           .withFaceExpressions()
           .withAgeAndGender();
 
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        const resizedDetections = faceapi.resizeResults(
+          detections,
+          displaySize
+        );
         canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawDetections(canvas, resizedDetections);
 
@@ -70,7 +84,10 @@ export class FaceDetectionComponent implements OnInit {
 
           this.ngZone.run(() => {
             this.age = Math.round(age);
-            this.mood = this.getMaxExpression(expressions);
+            // this.mood = this.getMaxExpression(expressions);
+            this.moodMessage = this.getMoodMessage(
+              this.getMaxExpression(expressions)
+            );
           });
         }
       }, 100);
@@ -78,9 +95,20 @@ export class FaceDetectionComponent implements OnInit {
   }
 
   getMaxExpression(expressions: faceapi.FaceExpressions): string {
-    return Object.entries(expressions).reduce((max, [expression, probability]) =>
-      probability > max.probability ? { expression, probability } : max,
+    return Object.entries(expressions).reduce(
+      (max, [expression, probability]) =>
+        probability > max.probability ? { expression, probability } : max,
       { expression: '', probability: -1 }
     ).expression;
+  }
+
+  getMoodMessage(mood: string): string {
+    if (mood === 'happy') {
+      return "That's good, you're happy!";
+    } else if (mood === 'sad') {
+      return 'Why are you sad?';
+    } else {
+      return `Mood detected: ${mood}`;
+    }
   }
 }
