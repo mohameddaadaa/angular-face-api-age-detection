@@ -52,7 +52,7 @@ export class FaceDetectionComponent implements OnInit {
     return navigator.mediaDevices
       .getUserMedia({ video: {} })
       .then((stream) => {
-        if (this.videoElement.nativeElement) {
+        if (this.videoElement?.nativeElement) {
           this.videoElement.nativeElement.srcObject = stream;
         }
       })
